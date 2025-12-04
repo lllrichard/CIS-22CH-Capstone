@@ -1,6 +1,6 @@
 // API module for connecting to C++ Crow backend on port 8080
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
 
 // Fetch airline by IATA code
 export async function fetchAirline(iata: string) {

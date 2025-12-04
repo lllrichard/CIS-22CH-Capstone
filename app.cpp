@@ -1,5 +1,6 @@
 #define CROW_USE_BOOST
 #include "crow_all.h"
+#include <cstdlib>
 
 #include <fstream>
 #include <sstream>
@@ -219,7 +220,15 @@ double haversineKm(double lat1, double lon1, double lat2, double lon2) {
     return R * c;
 }
 
-// ---------- CORS Middleware ----------
+// ---------- CORS Helpers ----------
+
+std::string getAllowedOrigin() {
+    static std::string origin = [](){
+        const char* env = std::getenv("ALLOWED_ORIGIN");
+        return env ? std::string(env) : "http://localhost:3000";
+    }();
+    return origin;
+}
 
 struct CorsMiddleware {
     struct context {};
@@ -229,7 +238,7 @@ struct CorsMiddleware {
     }
 
     void after_handle(crow::request& /*req*/, crow::response& res, context& /*ctx*/) {
-        res.add_header("Access-Control-Allow-Origin", "http://localhost:3000");
+        res.add_header("Access-Control-Allow-Origin", getAllowedOrigin());
         res.add_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         res.add_header("Access-Control-Allow-Headers", "Content-Type");
     }
@@ -1005,12 +1014,14 @@ int main() {
     CROW_ROUTE(app, "/<path>").methods("OPTIONS"_method)
     ([](const std::string&) {
         crow::response res(204);
-        res.add_header("Access-Control-Allow-Origin", "http://localhost:3000");
+        res.add_header("Access-Control-Allow-Origin", getAllowedOrigin());
         res.add_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         res.add_header("Access-Control-Allow-Headers", "Content-Type");
         return res;
     });
 
-    app.port(8080).multithreaded().run();
+    const char* portEnv = std::getenv("PORT");
+    int port = portEnv ? std::stoi(portEnv) : 8080;
+    app.port(port).multithreaded().run();
     return 0;
 }
